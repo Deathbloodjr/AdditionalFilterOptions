@@ -34,11 +34,6 @@ namespace AdditionalFilterOptions.Patches
         SongSelectManager songSelectManager { get; set; }
         static List<SongSelectManager.Song> FullSongList = new List<SongSelectManager.Song>();
 
-        //SortSettings sortSettings;
-        //FilterSettings filterSettings;
-
-        //CycleButton playlistButton;
-        //CycleButton sortingButton;
 
         TextMeshProUGUI numSongsDisplay;
 
@@ -76,7 +71,7 @@ namespace AdditionalFilterOptions.Patches
             }
 
             FullSongList = new List<SongSelectManager.Song>();
-            Plugin.Log.LogInfo("AdditionalFilterMenu Created");
+            //Plugin.Log.LogInfo("AdditionalFilterMenu Created");
 
             if (AdditionalFilterOptionsPatch.isFirstStartup)
             {
@@ -145,9 +140,10 @@ namespace AdditionalFilterOptions.Patches
         }
 
         static public int previousIndex = -1;
-        public void UpdatePreviousSongIndex()
+        public void SongStarted()
         {
             previousIndex = songSelectManager.SelectedSongIndex;
+            SaveSettingsManager.SaveLatestSettings();
         }
 
         //void Update()
@@ -179,7 +175,6 @@ namespace AdditionalFilterOptions.Patches
         public void SetFilterMenuActive(bool isActive)
         {
             realParent.SetActive(isActive);
-            UpdateUiElements();
         }
 
         private void InitializeUI()
@@ -211,111 +206,116 @@ namespace AdditionalFilterOptions.Patches
             // Accuracy sorting
             // Accuracy then Difficulty sorting
             // It'd be neat to be able to sort by number of plays, but I don't think those stats are saved in TakoTako
-
-            parent = UnityObjectUtility.CreateImage("FilterBackground", new Color32(0, 0, 0, (int)(255 * 0.698f)), new Rect(0, 0, 1920, 1080), realParent.transform);
-
-            // TODO: Add UI elements to enable/disable favorites and bonus songs
-
-            InitializeGenreFilter();
-
-            InitializeCrownFilter();
-
-            InitializeDifficultyFilter();
-
-            InitializeDifficultySliders();
-
-            InitializeSetDefaultButton();
-
-            InitializeBonusFilterButton();
-
-            InitializeFavoriteFilterButton();
-
-            for (int i = 0; i < (int)EnsoData.SongGenre.Num; i++)
+            try
             {
-                var genre = (EnsoData.SongGenre)i;
-                if (GenreFilterButtons.ContainsKey(genre))
+
+                parent = UnityObjectUtility.CreateImage("FilterBackground", new Color32(0, 0, 0, (int)(255 * 0.698f)), new Rect(0, 0, 1920, 1080), realParent.transform);
+
+                InitializeGenreFilter();
+
+                InitializeCrownFilter();
+
+                InitializeDifficultyFilter();
+
+                InitializeDifficultySliders();
+
+                InitializeSetDefaultButton();
+
+                InitializeBonusFilterButton();
+
+                InitializeFavoriteFilterButton();
+
+                for (int i = 0; i < (int)EnsoData.SongGenre.Num; i++)
                 {
-                    AssetUtility.ChangeButtonTransparency(GenreFilterButtons[genre], SaveSettingsManager.filterSettings.GetGenre(genre));
+                    var genre = (EnsoData.SongGenre)i;
+                    if (GenreFilterButtons.ContainsKey(genre))
+                    {
+                        AssetUtility.ChangeButtonTransparency(GenreFilterButtons[genre], SaveSettingsManager.filterSettings.GetGenre(genre));
+                    }
                 }
+
+                var searchInput = AssetUtility.CreateInputField(parent, "SearchInput", new Rect(100, 100, 1000, 200));
+                inputField = searchInput.GetComponent<TMP_InputField>();
+                inputField.onValueChanged.AddListener((string x) => SearchInputChanged(x));
+                inputField.onDeselect.AddListener((string x) => ActivateInputField());
+
+                DirectoryInfo playlistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigPlaylistLocation.Value);
+                var playlistFiles = playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList();
+
+                playlistDataObjects = new List<PlaylistData>();
+                for (int i = 0; i < playlistFiles.Count; i++)
+                {
+                    var playlistDataObject = new PlaylistData(playlistFiles[i].FullName);
+                    playlistDataObjects.Add(playlistDataObject);
+                }
+
+                playlistDataObjects.Sort((x, y) => x.Order > y.Order ? 1 : -1);
+
+
+                List<string> playlistOptions = new List<string>() { "None" };
+                for (int i = 0; i < playlistDataObjects.Count; i++)
+                {
+                    playlistOptions.Add(playlistDataObjects[i].Name);
+                }
+
+                var dropdownObject = AssetUtility.CreateDropdown(parent, "Playlist", new Rect(1500, 500, 300, 100), playlistOptions);
+                var dropdown = dropdownObject.GetOrAddComponent<TMP_Dropdown>();
+                dropdown.onValueChanged.AddListener((int i) => PlaylistDropdownChanged(i));
+
+
+
+                List<string> sortOptions = new List<string>();
+                foreach (var item in Enum.GetValues(typeof(SortType)))
+                {
+                    sortOptions.Add(item.ToString());
+                }
+
+                var sortDropdownObject = AssetUtility.CreateDropdown(parent, "Sort", new Rect(1500, 300, 300, 100), sortOptions);
+                var sortDropdown = sortDropdownObject.GetOrAddComponent<TMP_Dropdown>();
+                sortDropdown.onValueChanged.AddListener((int i) => SortDropdownChanged(i));
+
+                //var playlistObject = UnityObjectUtility.CreateCycleButton("PlaylistCycle", playlistOptions, playlistData, new Rect(50, 400, 500, 50), parent.transform);
+                //playlistButton = playlistObject.GetComponent<CycleButton>();
+
+
+                //List<string> sortingOptions = new List<string>()
+                //{
+                //    "Default",
+                //    "Difficulty",
+                //    "Accuracy",
+                //    "Difficulty -> Accuracy",
+                //    "Alphabetical (Title)",
+                //    "Alphabetical (Subtitle)",
+                //};
+
+                //List<string> sortingData = new List<string>()
+                //{
+
+                //};
+
+                //var sortingObject = UnityObjectUtility.CreateCycleButton("SortingCycle", sortingOptions, sortingData, new Rect(50, 325, 500, 50), parent.transform);
+                //sortingButton = playlistObject.GetComponent<CycleButton>();
+
+                numSongsDisplay = AssetUtility.CreateTextChild(parent, "NumSongs", new Rect(1700, 1000, 100, 100), "x/y").GetOrAddComponent<TextMeshProUGUI>();
+
+                FontTMPManager fontTMPMgr = TaikoSingletonMonoBehaviour<CommonObjects>.Instance.MyDataManager.FontTMPMgr;
+                var titleFont = fontTMPMgr.GetDefaultFontAsset(DataConst.FontType.EFIGS);
+                var titleFontMaterial = fontTMPMgr.GetDefaultFontMaterial(DataConst.FontType.EFIGS, DataConst.DefaultFontMaterialType.KanbanSelect);
+                AssetUtility.SetTextFontAndMaterial(numSongsDisplay, titleFont, titleFontMaterial);
+                AssetUtility.SetTextAlignment(numSongsDisplay, HorizontalAlignmentOptions.Right);
+
+                //UnityObjectUtility.CreateDropdown("PlaylistDropdown", dropdownOptions, new Rect(50, 400, 500, 200), parent.transform);
+
+                var resetObject = AssetUtility.CreateButton(parent, "Reset", new Rect(1800, 100, 100, 50), "Reset", new Color32(255, 255, 255, 255));
+                var resetButton = resetObject.GetOrAddComponent<UIButton>();
+                resetButton.onClick.AddListener(() => ResetFilters());
+
+                UpdateUiElements();
             }
-
-            var searchInput = AssetUtility.CreateInputField(parent, "SearchInput", new Rect(100, 100, 1000, 200));
-            inputField = searchInput.GetComponent<TMP_InputField>();
-            inputField.onValueChanged.AddListener((string x) => SearchInputChanged(x));
-            inputField.onDeselect.AddListener((string x) => ActivateInputField());
-
-            DirectoryInfo playlistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigPlaylistLocation.Value);
-            var playlistFiles = playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList();
-
-            playlistDataObjects = new List<PlaylistData>();
-            for (int i = 0; i < playlistFiles.Count; i++)
+            catch (Exception e)
             {
-                var playlistDataObject = new PlaylistData(playlistFiles[i].FullName);
-                playlistDataObjects.Add(playlistDataObject);
+                Plugin.LogError(e.Message);
             }
-
-            playlistDataObjects.Sort((x, y) => x.Order > y.Order ? 1 : -1);
-
-
-            List<string> playlistOptions = new List<string>() { "None" };
-            for (int i = 0; i < playlistDataObjects.Count; i++)
-            {
-                playlistOptions.Add(playlistDataObjects[i].Name);
-            }
-
-            var dropdownObject = AssetUtility.CreateDropdown(parent, "Playlist", new Rect(1500, 500, 300, 100), playlistOptions);
-            var dropdown = dropdownObject.GetOrAddComponent<TMP_Dropdown>();
-            dropdown.onValueChanged.AddListener((int i) => PlaylistDropdownChanged(i));
-
-
-
-            List<string> sortOptions = new List<string>();
-            foreach (var item in Enum.GetValues(typeof(SortType)))
-            {
-                sortOptions.Add(item.ToString());
-            }
-
-            var sortDropdownObject = AssetUtility.CreateDropdown(parent, "Sort", new Rect(1500, 300, 300, 100), sortOptions);
-            var sortDropdown = sortDropdownObject.GetOrAddComponent<TMP_Dropdown>();
-            sortDropdown.onValueChanged.AddListener((int i) => SortDropdownChanged(i));
-
-            //var playlistObject = UnityObjectUtility.CreateCycleButton("PlaylistCycle", playlistOptions, playlistData, new Rect(50, 400, 500, 50), parent.transform);
-            //playlistButton = playlistObject.GetComponent<CycleButton>();
-
-
-            //List<string> sortingOptions = new List<string>()
-            //{
-            //    "Default",
-            //    "Difficulty",
-            //    "Accuracy",
-            //    "Difficulty -> Accuracy",
-            //    "Alphabetical (Title)",
-            //    "Alphabetical (Subtitle)",
-            //};
-
-            //List<string> sortingData = new List<string>()
-            //{
-
-            //};
-
-            //var sortingObject = UnityObjectUtility.CreateCycleButton("SortingCycle", sortingOptions, sortingData, new Rect(50, 325, 500, 50), parent.transform);
-            //sortingButton = playlistObject.GetComponent<CycleButton>();
-
-            numSongsDisplay = AssetUtility.CreateTextChild(parent, "NumSongs", new Rect(1700, 1000, 100, 100), "x/y").GetOrAddComponent<TextMeshProUGUI>();
-
-            FontTMPManager fontTMPMgr = TaikoSingletonMonoBehaviour<CommonObjects>.Instance.MyDataManager.FontTMPMgr;
-            var titleFont = fontTMPMgr.GetDefaultFontAsset(DataConst.FontType.EFIGS);
-            var titleFontMaterial = fontTMPMgr.GetDefaultFontMaterial(DataConst.FontType.EFIGS, DataConst.DefaultFontMaterialType.KanbanSelect);
-            AssetUtility.SetTextFontAndMaterial(numSongsDisplay, titleFont, titleFontMaterial);
-            AssetUtility.SetTextAlignment(numSongsDisplay, HorizontalAlignmentOptions.Right);
-
-            //UnityObjectUtility.CreateDropdown("PlaylistDropdown", dropdownOptions, new Rect(50, 400, 500, 200), parent.transform);
-
-            var resetObject = AssetUtility.CreateButton(parent, "Reset", new Rect(1800, 100, 100, 50), "Reset", new Color32(255, 255, 255, 255));
-            var resetButton = resetObject.GetOrAddComponent<UIButton>();
-            resetButton.onClick.AddListener(() => ResetFilters());
-
-            UpdateUiElements();
         }
 
         private void ResetFilters()
@@ -889,61 +889,61 @@ namespace AdditionalFilterOptions.Patches
             return result;
         }
 
-        void UpdateSongList(List<SongSelectManager.Song> newList)
-        {
-            if (FullSongList.Count <= songSelectManager.SelectedSongIndex)
-            {
-                Plugin.LogError("FullSongList.Count " + FullSongList.Count + " <= songSelectManager.SelectedSongIndex " + songSelectManager.SelectedSongIndex);
-            }
-            var prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
+        //void UpdateSongList(List<SongSelectManager.Song> newList)
+        //{
+        //    if (FullSongList.Count <= songSelectManager.SelectedSongIndex)
+        //    {
+        //        Plugin.LogError("FullSongList.Count " + FullSongList.Count + " <= songSelectManager.SelectedSongIndex " + songSelectManager.SelectedSongIndex);
+        //    }
+        //    var prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
 
-            if (newList.Count == 0)
-            {
-                songSelectManager.SongList = new List<SongSelectManager.Song>(FullSongList);
-            }
-            else
-            {
-                songSelectManager.SongList = new List<SongSelectManager.Song>(newList);
-            }
+        //    if (newList.Count == 0)
+        //    {
+        //        songSelectManager.SongList = new List<SongSelectManager.Song>(FullSongList);
+        //    }
+        //    else
+        //    {
+        //        songSelectManager.SongList = new List<SongSelectManager.Song>(newList);
+        //    }
 
-            int newSongIndex = 0;
-            for (int i = 0; i < newList.Count; i++)
-            {
-                if (newList[i].Id == prevSongId)
-                {
-                    newSongIndex = i;
-                    break;
-                }
-            }
+        //    int newSongIndex = 0;
+        //    for (int i = 0; i < newList.Count; i++)
+        //    {
+        //        if (newList[i].Id == prevSongId)
+        //        {
+        //            newSongIndex = i;
+        //            break;
+        //        }
+        //    }
 
-            var currentCueSheetName = songSelectManager.songPlayer.CueSheetName;
-            if (songSelectManager.SongList.Count <= newSongIndex)
-            {
-                Plugin.LogError("songSelectManager.SongList.Count <= newSongIndex");
-            }
-            if (songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex)
-            {
-                Plugin.LogError("songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex");
-            }
-            var currentSongSheetName = songSelectManager.bgmCueSheets[songSelectManager.SongList[newSongIndex].PreviewIndex];
+        //    var currentCueSheetName = songSelectManager.songPlayer.CueSheetName;
+        //    if (songSelectManager.SongList.Count <= newSongIndex)
+        //    {
+        //        Plugin.LogError("songSelectManager.SongList.Count <= newSongIndex");
+        //    }
+        //    if (songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex)
+        //    {
+        //        Plugin.LogError("songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex");
+        //    }
+        //    var currentSongSheetName = songSelectManager.bgmCueSheets[songSelectManager.SongList[newSongIndex].PreviewIndex];
 
-            if (currentCueSheetName != currentSongSheetName)
-            {
-                songSelectManager.playingSongIndex = -1;
-                songSelectManager.isSongLoadRequested = true;
-                songSelectManager.songPlayer.Stop(true);
-                songSelectManager.isSongPlaying = false;
-            }
+        //    if (currentCueSheetName != currentSongSheetName)
+        //    {
+        //        songSelectManager.playingSongIndex = -1;
+        //        songSelectManager.isSongLoadRequested = true;
+        //        songSelectManager.songPlayer.Stop(true);
+        //        songSelectManager.isSongPlaying = false;
+        //    }
 
-            songSelectManager.SelectedSongIndex = newSongIndex;
-            songSelectManager.PlayKanbanMoveAnim(SongSelectManager.KanbanMoveType.Initialize, SongSelectManager.KanbanMoveSpeed.Normal);
-            songSelectManager.UpdateKanbanSurface(false);
-            songSelectManager.UpdateSortBarSurface(true);
+        //    songSelectManager.SelectedSongIndex = newSongIndex;
+        //    songSelectManager.PlayKanbanMoveAnim(SongSelectManager.KanbanMoveType.Initialize, SongSelectManager.KanbanMoveSpeed.Normal);
+        //    songSelectManager.UpdateKanbanSurface(false);
+        //    songSelectManager.UpdateSortBarSurface(true);
 
-            songSelectManager.oniUraChangeTimeCount = 0f;
-            songSelectManager.kanbans[0].DiffCourseChangeAnim.Play("ChangeMania", 0, 1f);
-            songSelectManager.UpdateScoreDisplay();
-        }
+        //    songSelectManager.oniUraChangeTimeCount = 0f;
+        //    songSelectManager.kanbans[0].DiffCourseChangeAnim.Play("ChangeMania", 0, 1f);
+        //    songSelectManager.UpdateScoreDisplay();
+        //}
 
         void UpdateSongList(List<SongFilterData> newList, List<SongSelectManager.Song> filteredList)
         {
@@ -958,8 +958,8 @@ namespace AdditionalFilterOptions.Patches
 
             // TODO: Make sure when a song is removed from the previous play, that the song list goes to that position after the song is removed
             var prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
-            Plugin.LogInfo("prevSongId: " + prevSongId);
-            Plugin.LogInfo("songSelectManager.SelectedSongIndex: " + songSelectManager.SelectedSongIndex);
+            //Plugin.LogInfo("prevSongId: " + prevSongId);
+            //Plugin.LogInfo("songSelectManager.SelectedSongIndex: " + songSelectManager.SelectedSongIndex);
 
             if (newList.Count == 0)
             {
@@ -988,6 +988,7 @@ namespace AdditionalFilterOptions.Patches
             if (songSelectManager.SongList.Count <= newSongIndex)
             {
                 Plugin.LogError("songSelectManager.SongList.Count <= newSongIndex");
+                newSongIndex = 0;
             }
             if (songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex)
             {
@@ -1014,11 +1015,34 @@ namespace AdditionalFilterOptions.Patches
 
             UpdateQuickJumpValues(newList, SaveSettingsManager.sortSettings.PrimarySort);
 
-            numSongsDisplay.text = songSelectManager.SongList.Count + "/" + FullSongList.Count;
+            //if (numSongsDisplay == null)
+            //{
+            //    Plugin.LogInfo("numSongsDisplay == null");
+            //}
+            //if (songSelectManager == null)
+            //{
+            //    Plugin.LogInfo("songSelectManager == null");
+            //}
+            //else if (songSelectManager.SongList == null)
+            //{
+            //    Plugin.LogInfo("songSelectManager.SongList == null");
+            //}
+            //if (FullSongList == null)
+            //{
+            //    Plugin.LogInfo("FullSongList == null");
+            //}
+
+
+            if (numSongsDisplay != null && songSelectManager != null && songSelectManager.SongList != null && FullSongList != null)
+            {
+                numSongsDisplay.text = songSelectManager.SongList.Count + "/" + FullSongList.Count;
+            }
+            Plugin.LogInfo("UpdateSongList Finished");
         }
 
         void UpdateQuickJumpValues(List<SongFilterData> songs, SortType primarySort)
         {
+            Plugin.LogInfo("UpdateQuickJumpValues Start");
             switch (primarySort)
             {
                 case SortType.Difficulty:
@@ -1075,6 +1099,7 @@ namespace AdditionalFilterOptions.Patches
                     }
                     break;
             }
+            Plugin.LogInfo("UpdateQuickJumpValues Finish");
         }
 
         public static int GetAccCategory(float acc)

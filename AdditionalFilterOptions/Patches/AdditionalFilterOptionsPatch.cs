@@ -128,7 +128,7 @@ namespace AdditionalFilterOptions.Patches
         [HarmonyPrefix]
         private static bool CourseSelect_EnsoConfigSubmit_Prefix(CourseSelect __instance)
         {
-            filterMenu.UpdatePreviousSongIndex();
+            filterMenu.SongStarted();
             return true;
         }
 
