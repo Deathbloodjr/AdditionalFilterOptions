@@ -226,7 +226,7 @@ namespace AdditionalFilterOptions.Patches
             // otherwise, the file doesn't exist, log an error, and return null (or hopefully a small transparent sprite
             else
             {
-                Plugin.LogError("Could not find file: " + spriteFilePath);
+                ModLogger.Log("Could not find file: " + spriteFilePath, LogType.Error);
                 // Instead of null, could I have this return just a 1x1 transparent sprite or something?
 
                 // Creates a transparent 2x2 texture, and returns that as the sprite

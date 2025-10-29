@@ -19,7 +19,7 @@ namespace AdditionalFilterOptions.Settings
                 }
                 else
                 {
-                    return SortType.Default;
+                    return SortType.Order;
                 }
             }
         }

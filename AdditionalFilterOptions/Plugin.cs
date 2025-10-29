@@ -22,7 +22,7 @@ namespace AdditionalFilterOptions
     public class Plugin : BasePlugin
 #endif
     {
-        const string ModName = "AdditionalFilterOptions";
+        public const string ModName = "AdditionalFilterOptions";
 
         public static Plugin Instance;
         private Harmony _harmony;
@@ -110,45 +110,6 @@ namespace AdditionalFilterOptions
 #elif TAIKO_IL2CPP
             GetMonoBehaviour().StartCoroutine(enumerator);
 #endif
-        }
-
-        public void LogInfoInstance(string value, int detailLevel = 0)
-        {
-            // Only print if Detailed Enabled is true, or if DetailedEnabled is false and isDetailed is false
-            if (ConfigLoggingEnabled.Value && (ConfigLoggingDetailLevelEnabled.Value >= detailLevel))
-            {
-                Log.LogInfo("[" + detailLevel + "] " + value);
-            }
-        }
-        public static void LogInfo(string value, int detailLevel = 0)
-        {
-            Instance.LogInfoInstance(value, detailLevel);
-        }
-
-
-        public void LogWarningInstance(string value, int detailLevel = 0)
-        {
-            if (ConfigLoggingEnabled.Value && (ConfigLoggingDetailLevelEnabled.Value >= detailLevel))
-            {
-                Log.LogWarning("[" + detailLevel + "] " + value);
-            }
-        }
-        public static void LogWarning(string value, int detailLevel = 0)
-        {
-            Instance.LogWarningInstance(value, detailLevel);
-        }
-
-
-        public void LogErrorInstance(string value, int detailLevel = 0)
-        {
-            if (ConfigLoggingEnabled.Value && (ConfigLoggingDetailLevelEnabled.Value >= detailLevel))
-            {
-                Log.LogError("[" + detailLevel + "] " + value);
-            }
-        }
-        public static void LogError(string value, int detailLevel = 0)
-        {
-            Instance.LogErrorInstance(value, detailLevel);
         }
 
     }

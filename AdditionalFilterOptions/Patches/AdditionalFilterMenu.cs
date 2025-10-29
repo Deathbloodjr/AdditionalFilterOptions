@@ -10,7 +10,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.UI;
-using static ControllerManager;
+using static AdditionalFilterOptions.Patches.SongData;
 
 namespace AdditionalFilterOptions.Patches
 {
@@ -32,7 +32,8 @@ namespace AdditionalFilterOptions.Patches
         UIButton FavoriteButton;
 
         SongSelectManager songSelectManager { get; set; }
-        static List<SongSelectManager.Song> FullSongList = new List<SongSelectManager.Song>();
+        static List<SongSelectManager.Song> InitialSongList = new List<SongSelectManager.Song>();
+        static List<SongDifficultyData> FullSongList = new List<SongDifficultyData>();
 
 
         TextMeshProUGUI numSongsDisplay;
@@ -44,12 +45,6 @@ namespace AdditionalFilterOptions.Patches
         {
             realParent = AssetUtility.GetOrCreateEmptyObject(null, FilterParentName, Vector2.zero);
             realParent.layer = 5;
-            //parent = GameObject.Find(FilterParentName);
-            //if (parent == null)
-            //{
-            //    parent = new GameObject(FilterParentName);
-            //    parent.layer = 5;
-            //}
 
             transform.SetParent(realParent.transform);
 
@@ -70,7 +65,8 @@ namespace AdditionalFilterOptions.Patches
                 parentCanvasScaler.matchWidthOrHeight = 0;
             }
 
-            FullSongList = new List<SongSelectManager.Song>();
+            FullSongList = new List<SongDifficultyData>();
+            InitialSongList = new List<SongSelectManager.Song>();
             //Plugin.Log.LogInfo("AdditionalFilterMenu Created");
 
             if (AdditionalFilterOptionsPatch.isFirstStartup)
@@ -83,51 +79,6 @@ namespace AdditionalFilterOptions.Patches
                 SaveSettingsManager.LoadLatestSettings();
             }
 
-            //sortSettings = new SortSettings();
-            //sortSettings.Sorts.Add(SortType.Difficulty);
-            //sortSettings.Sorts.Add(SortType.Accuracy);
-
-            //filterSettings = new FilterSettings();
-            //for (int i = 0; i < (int)EnsoData.SongGenre.Num; i++)
-            //{
-            //    if ((EnsoData.SongGenre)i == EnsoData.SongGenre.Children ||
-            //        (EnsoData.SongGenre)i == EnsoData.SongGenre.Num)
-            //    {
-            //        continue;
-            //    }
-            //    if (!filterSettings.EnabledGenres.ContainsKey((EnsoData.SongGenre)i))
-            //    {
-            //        filterSettings.EnabledGenres.Add((EnsoData.SongGenre)i, true);
-            //    }
-            //}
-            //for (int i = 0; i < (int)DataConst.CrownType.Num; i++)
-            //{
-            //    // Available crowns are None, Silver, Gold, and Rainbow
-            //    if ((DataConst.CrownType)i == DataConst.CrownType.Bronze ||
-            //        (DataConst.CrownType)i == DataConst.CrownType.Off ||
-            //        (DataConst.CrownType)i == DataConst.CrownType.Num)
-            //    {
-            //        continue;
-            //    }
-            //    if (!filterSettings.EnabledCrowns.ContainsKey((DataConst.CrownType)i))
-            //    {
-            //        filterSettings.EnabledCrowns.Add((DataConst.CrownType)i, true);
-            //    }
-            //}
-            //for (int i = 0; i < (int)EnsoData.EnsoLevelType.Num; i++)
-            //{
-            //    var diff = (EnsoData.EnsoLevelType)i;
-            //    if (diff == EnsoData.EnsoLevelType.Num)
-            //    {
-            //        continue;
-            //    }
-            //    if (!filterSettings.EnabledDifficulties.ContainsKey(diff))
-            //    {
-            //        filterSettings.EnabledDifficulties.Add(diff, true);
-            //    }
-            //}
-            //filterSettings.MinDifficulty = 1;
-            //filterSettings.MaxDifficulty = 10;
 
             SetFilterMenuActive(false);
             InitializeUI();
@@ -145,32 +96,6 @@ namespace AdditionalFilterOptions.Patches
             previousIndex = songSelectManager.SelectedSongIndex;
             SaveSettingsManager.SaveLatestSettings();
         }
-
-        //void Update()
-        //{
-        //    if (gameObject.activeInHierarchy)
-        //    {
-        //        if (HasFilterChanged())
-        //        {
-        //            FilterSongList();
-        //        }
-        //    }
-        //}
-
-        //private bool HasFilterChanged()
-        //{
-        //    // Only set hasChanged to true, but look through everything to find changes
-        //    bool hasChanged = false;
-        //    if (playlistButton != null)
-        //    {
-        //        if (playlistButton.HasChanged())
-        //        {
-        //            hasChanged = true;
-        //        }
-        //    }
-
-        //    return hasChanged;
-        //}
 
         public void SetFilterMenuActive(bool isActive)
         {
@@ -314,7 +239,7 @@ namespace AdditionalFilterOptions.Patches
             }
             catch (Exception e)
             {
-                Plugin.LogError(e.Message);
+                ModLogger.Log(e.Message, LogType.Error);
             }
         }
 
@@ -627,7 +552,7 @@ namespace AdditionalFilterOptions.Patches
         {
             rightClickedGenreOnce = false;
             previousGenreRightClick = EnsoData.SongGenre.Num;
-            Plugin.LogInfo("Button Click: " + genre);
+            ModLogger.Log("Button Click: " + genre);
             SaveSettingsManager.filterSettings.SetGenre(genre, !SaveSettingsManager.filterSettings.GetGenre(genre));
             AssetUtility.ChangeButtonTransparency(GenreFilterButtons[genre], SaveSettingsManager.filterSettings.GetGenre(genre));
             FilterSongList();
@@ -669,7 +594,7 @@ namespace AdditionalFilterOptions.Patches
         {
             rightClickedCrownOnce = false;
             previousCrownClick = DataConst.CrownType.Num;
-            Plugin.LogInfo("Button Click: " + crown);
+            ModLogger.Log("Button Click: " + crown);
             SaveSettingsManager.filterSettings.SetCrown(crown, !SaveSettingsManager.filterSettings.GetCrown(crown));
             AssetUtility.ChangeButtonTransparency(CrownFilterButtons[crown], SaveSettingsManager.filterSettings.GetCrown(crown));
             FilterSongList();
@@ -712,7 +637,7 @@ namespace AdditionalFilterOptions.Patches
         {
             rightClickedDifficultyOnce = false;
             previousDifficultyClick = EnsoData.EnsoLevelType.Num;
-            Plugin.LogInfo("Button Click: " + diff);
+            ModLogger.Log("Button Click: " + diff);
             SaveSettingsManager.filterSettings.SetDifficulty(diff, !SaveSettingsManager.filterSettings.GetDifficulty(diff));
             AssetUtility.ChangeButtonTransparency(DifficultyFilterButtons[diff], SaveSettingsManager.filterSettings.GetDifficulty(diff));
             FilterSongList();
@@ -747,7 +672,7 @@ namespace AdditionalFilterOptions.Patches
 
         public void SearchInputChanged(string newValue)
         {
-            Plugin.LogInfo("SearchInput Changed: " + newValue);
+            ModLogger.Log("SearchInput Changed: " + newValue);
             SaveSettingsManager.filterSettings.TextFilter = newValue;
             FilterSongList();
         }
@@ -810,9 +735,11 @@ namespace AdditionalFilterOptions.Patches
 
         public void InitializeFullSongList(List<SongSelectManager.Song> songList)
         {
-            if (FullSongList.Count < songList.Count)
+            if (FullSongList.Count == 0)
             {
-                FullSongList = songList;
+                FullSongList = SongData.InitializeFullSongList(songList);
+                InitialSongList.Clear();
+                InitialSongList.AddRange(songList);
             }
             Plugin.Log.LogInfo("AdditionalFilterMenu InitializedSongList");
             FilterSongList();
@@ -820,70 +747,40 @@ namespace AdditionalFilterOptions.Patches
 
         private void FilterSongList()
         {
-            List<SongSelectManager.Song> filteredSongList = LoadPlaylist(SaveSettingsManager.filterSettings.PlaylistData);
-
-            filteredSongList = Filter.FilterText(filteredSongList, SaveSettingsManager.filterSettings.TextFilter);
-            filteredSongList = Filter.FilterGenres(filteredSongList, SaveSettingsManager.filterSettings.EnabledGenres);
-
-            var songFilterDataList = new List<SongFilterData>();
-            for (int j = 0; j < (int)EnsoData.EnsoLevelType.Num; j++)
-            {
-                var jDiff = (EnsoData.EnsoLevelType)j;
-                if (!SaveSettingsManager.filterSettings.GetDifficulty(jDiff))
-                {
-                    continue;
-                }
-                for (int i = 0; i < filteredSongList.Count; i++)
-                {
-                    songFilterDataList.Add(new SongFilterData(filteredSongList[i], jDiff));
-                }
-            }
-
-
-            songFilterDataList = Filter.FilterCrowns(songFilterDataList, SaveSettingsManager.filterSettings.EnabledCrowns);
-            songFilterDataList = Filter.FilterDifficulty(songFilterDataList, SaveSettingsManager.filterSettings.MinDifficulty, SaveSettingsManager.filterSettings.MaxDifficulty);
-
-            songFilterDataList = Filter.FilterBonus(songFilterDataList, SaveSettingsManager.filterSettings.Bonus);
-            songFilterDataList = Filter.FilterFavorite(songFilterDataList, SaveSettingsManager.filterSettings.Favorite);
-
-            //filteredSongList = Sort.SortSongList(filteredSongList, sortSettings.Sorts, filterSettings.EnabledDifficulties);
-
+            List<SongDifficultyData> filteredSongList = LoadPlaylist(SaveSettingsManager.filterSettings.PlaylistData);
             if (SaveSettingsManager.filterSettings.PlaylistData.Name == "None")
             {
-                songFilterDataList = Sort.SortSongList(songFilterDataList, SaveSettingsManager.sortSettings, false);
+                for (int i = 0; i < filteredSongList.Count; i++)
+                {
+                    if (!filteredSongList[i].IsValidWithFilter(SaveSettingsManager.filterSettings))
+                    {
+                        filteredSongList.RemoveAt(i);
+                        i--;
+                    }
+                }
+
+                filteredSongList = SongListSorter.SortSongs(filteredSongList, SaveSettingsManager.sortSettings);
+                filteredSongList = SongListSorter.RemoveDuplicates(filteredSongList, SaveSettingsManager.sortSettings);
             }
 
-            UpdateSongList(songFilterDataList, filteredSongList);
+            UpdateSongList(filteredSongList);
         }
 
-        List<SongSelectManager.Song> LoadPlaylist(PlaylistData songData)
+        List<SongDifficultyData> LoadPlaylist(PlaylistData songData)
         {
             if (songData == null || songData.JsonFilePath == string.Empty)
             {
-                return new List<SongSelectManager.Song>(FullSongList);
+                return new List<SongDifficultyData>(FullSongList);
             }
-            List<SongSelectManager.Song> result = new List<SongSelectManager.Song>();
+            List<SongDifficultyData> result = new List<SongDifficultyData>();
 
             for (int i = 0; i < songData.Songs.Count; i++)
             {
                 for (int j = 0; j < FullSongList.Count; j++)
                 {
-                    if (FullSongList[j].Id == songData.Songs[i].SongId)
+                    if (FullSongList[j].MusicInfo.Id == songData.Songs[i].SongId)
                     {
-                        SongSelectManager.Song song = new SongSelectManager.Song(FullSongList[j]);
-                        song.TitleKey = "song_" + songData.Songs[i].SongId;
-                        song.SubKey = "song_sub_" + songData.Songs[i].SongId;
-                        song.RubyKey = "song_detail_" + songData.Songs[i].SongId;
-                        // Changing Genres is a little buggy, but mostly works
-                        // Once you move the song list once, it works just fine
-                        song.SongGenre = songData.Songs[i].GenreNo;
-
-                        song.Order = i;
-
-                        // ListGenre is not used anywhere it seems
-                        //FullSongList[j].ListGenre = songData.Songs[i].GenreNo;
-                        song.DLC = songData.Songs[i].IsDlc;
-                        result.Add(song);
+                        result.Add(FullSongList[j]);
                         break;
                     }
                 }
@@ -948,7 +845,7 @@ namespace AdditionalFilterOptions.Patches
         //    songSelectManager.UpdateScoreDisplay();
         //}
 
-        void UpdateSongList(List<SongFilterData> newList, List<SongSelectManager.Song> filteredList)
+        void UpdateSongList(List<SongDifficultyData> filteredSongList)
         {
             if (FullSongList.Count <= songSelectManager.SelectedSongIndex)
             {
@@ -964,16 +861,21 @@ namespace AdditionalFilterOptions.Patches
             //Plugin.LogInfo("prevSongId: " + prevSongId);
             //Plugin.LogInfo("songSelectManager.SelectedSongIndex: " + songSelectManager.SelectedSongIndex);
 
-            if (newList.Count == 0)
+            if (filteredSongList.Count == 0)
             {
-                songSelectManager.SongList = new List<SongSelectManager.Song>(FullSongList);
+                songSelectManager.SongList = new List<SongSelectManager.Song>(InitialSongList);
             }
             else
             {
                 songSelectManager.SongList = new List<SongSelectManager.Song>();
-                for (int i = 0; i < newList.Count; i++)
+                for (int i = 0; i < filteredSongList.Count; i++)
                 {
-                    songSelectManager.SongList.Add(filteredList.Find((x) => x.Id == newList[i].SongId));
+                    SongSelectManager.Song song = new SongSelectManager.Song(InitialSongList.Find((x) => x.Id == filteredSongList[i].MusicInfo.Id));
+                    song.TitleKey = "song_" + filteredSongList[i].MusicInfo.Id;
+                    song.SubKey = "song_sub_" + filteredSongList[i].MusicInfo.Id;
+                    song.RubyKey = "song_detail_" + filteredSongList[i].MusicInfo.Id;
+                    song.ListGenre = filteredSongList[i].MusicInfo.GenreNo;
+                    songSelectManager.SongList.Add(song);
                 }
             }
 
@@ -987,15 +889,36 @@ namespace AdditionalFilterOptions.Patches
                 }
             }
 
+            // TODO: Fix this, it didn't work at all
+            //int newSongIndex = Mathf.Max(previousIndex, 0);
+            //List<int> validSongIndexes = new List<int>();
+            //for (int i = 0; i < songSelectManager.SongList.Count; i++)
+            //{
+            //    if (songSelectManager.SongList[i].Id == prevSongId)
+            //    {
+            //        validSongIndexes.Add(i);
+            //    }
+            //}
+
+            //int closestIndex = int.MaxValue;
+            //for (int i = 0; i < validSongIndexes.Count; i++)
+            //{
+            //    if (validSongIndexes[i] - songSelectManager.SelectedSongIndex < closestIndex)
+            //    {
+            //        closestIndex = validSongIndexes[i] - songSelectManager.SelectedSongIndex;
+            //        newSongIndex = i;
+            //    }
+            //}
+
             var currentCueSheetName = songSelectManager.songPlayer.CueSheetName;
             if (songSelectManager.SongList.Count <= newSongIndex)
             {
-                Plugin.LogError("songSelectManager.SongList.Count <= newSongIndex");
+                ModLogger.Log("songSelectManager.SongList.Count <= newSongIndex", LogType.Error);
                 newSongIndex = 0;
             }
             if (songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex)
             {
-                Plugin.LogError("songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex");
+                ModLogger.Log("songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex", LogType.Error);
             }
             var currentSongSheetName = songSelectManager.bgmCueSheets[songSelectManager.SongList[newSongIndex].PreviewIndex];
 
@@ -1016,7 +939,7 @@ namespace AdditionalFilterOptions.Patches
             songSelectManager.kanbans[0].DiffCourseChangeAnim.Play("ChangeMania", 0, 1f);
             songSelectManager.UpdateScoreDisplay();
 
-            UpdateQuickJumpValues(newList, SaveSettingsManager.sortSettings.PrimarySort);
+            UpdateQuickJumpValues(filteredSongList, SaveSettingsManager.sortSettings.PrimarySort);
 
             //if (numSongsDisplay == null)
             //{
@@ -1040,12 +963,12 @@ namespace AdditionalFilterOptions.Patches
             {
                 numSongsDisplay.text = songSelectManager.SongList.Count + "/" + FullSongList.Count;
             }
-            Plugin.LogInfo("UpdateSongList Finished");
+            ModLogger.Log("UpdateSongList Finished");
         }
 
-        void UpdateQuickJumpValues(List<SongFilterData> songs, SortType primarySort)
+        void UpdateQuickJumpValues(List<SongDifficultyData> songs, SortType primarySort)
         {
-            Plugin.LogInfo("UpdateQuickJumpValues Start");
+            ModLogger.Log("UpdateQuickJumpValues Start");
             switch (primarySort)
             {
                 case SortType.Difficulty:
@@ -1097,12 +1020,12 @@ namespace AdditionalFilterOptions.Patches
                     for (int i = 0; i < numCategories; i++)
                     {
                         songSelectManager.CategoryTopSongIndex[i] = num;
-                        songSelectManager.CategorySongsNum[i] = songs.Count((x) => x.GenreNo == i);
+                        songSelectManager.CategorySongsNum[i] = songs.Count((x) => (int)x.Genre == i);
                         num += songSelectManager.CategorySongsNum[i];
                     }
                     break;
             }
-            Plugin.LogInfo("UpdateQuickJumpValues Finish");
+            ModLogger.Log("UpdateQuickJumpValues Finish");
         }
 
         public static int GetAccCategory(float acc)

@@ -37,7 +37,7 @@ namespace AdditionalFilterOptions.Patches
             {
                 FileInfo file = new FileInfo(jsonFilePath);
                 LWJson node = LWJson.Parse(File.ReadAllText(file.FullName));
-                JsonFilePath = jsonFilePath.Remove(0, Plugin.Instance.ConfigPlaylistLocation.Value.Length + 1);
+                JsonFilePath = file.FullName.Replace(Path.GetFullPath(Plugin.Instance.ConfigPlaylistLocation.Value) + "\\", "");
                 InitializeData(node);
             }
             else
