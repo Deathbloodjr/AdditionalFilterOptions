@@ -847,8 +847,11 @@ namespace AdditionalFilterOptions.Patches
             songFilterDataList = Filter.FilterFavorite(songFilterDataList, SaveSettingsManager.filterSettings.Favorite);
 
             //filteredSongList = Sort.SortSongList(filteredSongList, sortSettings.Sorts, filterSettings.EnabledDifficulties);
-            songFilterDataList = Sort.SortSongList(songFilterDataList, SaveSettingsManager.sortSettings, false);
 
+            if (SaveSettingsManager.filterSettings.PlaylistData.Name == "None")
+            {
+                songFilterDataList = Sort.SortSongList(songFilterDataList, SaveSettingsManager.sortSettings, false);
+            }
 
             UpdateSongList(songFilterDataList, filteredSongList);
         }

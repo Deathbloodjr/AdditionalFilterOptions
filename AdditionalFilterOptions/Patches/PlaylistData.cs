@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine.UIElements;
 
 namespace AdditionalFilterOptions.Patches
 {
@@ -17,16 +18,25 @@ namespace AdditionalFilterOptions.Patches
 
         public PlaylistData(string jsonFilePath)
         {
+            if (!InitializeJsonData(jsonFilePath))
+            {
+                InitializeJsonData(Path.Combine(Plugin.Instance.ConfigPlaylistLocation.Value, jsonFilePath));
+            }
+        }
+
+        private bool InitializeJsonData(string jsonFilePath)
+        {
             if (jsonFilePath == "")
             {
                 Name = "None";
                 JsonFilePath = "";
-                return;
+                return true;
             }
-            FileInfo file = new FileInfo(jsonFilePath);
-            if (file.Exists)
+
+            if (File.Exists(jsonFilePath))
             {
-                LWJson node = LWJson.Parse(File.ReadAllText(jsonFilePath));
+                FileInfo file = new FileInfo(jsonFilePath);
+                LWJson node = LWJson.Parse(File.ReadAllText(file.FullName));
                 JsonFilePath = jsonFilePath.Remove(0, Plugin.Instance.ConfigPlaylistLocation.Value.Length + 1);
                 InitializeData(node);
             }
@@ -35,6 +45,7 @@ namespace AdditionalFilterOptions.Patches
                 Name = "None";
                 JsonFilePath = "";
             }
+            return false;
         }
 
         private void InitializeData(LWJson node)
@@ -45,8 +56,11 @@ namespace AdditionalFilterOptions.Patches
             var songsArray = node["songs"].AsArray();
             for (int i = 0; i < songsArray.Count; i++)
             {
-                var song = new PlaylistSongData(songsArray[i]);
-                Songs.Add(song);
+                var song = PlaylistSongData.CreatePlaylistSongData(songsArray[i]);
+                if (song is not null)
+                {
+                    Songs.Add(song);
+                }
             }
         }
     }

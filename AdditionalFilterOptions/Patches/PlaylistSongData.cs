@@ -13,18 +13,43 @@ namespace AdditionalFilterOptions.Patches
         public int GenreNo { get; set; }
         public bool IsDlc { get; set; } = false;
 
-        public PlaylistSongData(LWJson node)
+        PlaylistSongData()
         {
-            SongId = node["songId"].AsString();
-            GenreNo = node["genreNo"].AsInteger();
-            try
+
+        }
+
+        public static PlaylistSongData? CreatePlaylistSongData(LWJson node)
+        {
+            PlaylistSongData data = new PlaylistSongData();
+            if (node["songId"] is not null)
             {
-                IsDlc = node["isDlc"].AsBoolean();
+                data.SongId = node["songId"].AsString();
             }
-            catch
+            else
             {
-                IsDlc = false;
+                return null;
             }
+
+            if (node["genreNo"] is not null)
+            {
+                data.GenreNo = node["genreNo"].AsInteger();
+            }
+            else
+            {
+                // Namco Original
+                data.GenreNo = 7;
+            }
+
+            if (node["isDlc"] is not null)
+            {
+                data.IsDlc = node["isDlc"].AsBoolean();
+            }
+            else
+            {
+                data.IsDlc = false;
+            }
+
+            return data;
         }
     }
 }

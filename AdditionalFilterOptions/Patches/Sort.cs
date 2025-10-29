@@ -233,7 +233,7 @@ namespace AdditionalFilterOptions.Patches
             switch (SortList.PrimarySort)
             {
                 case SortType.Default:
-                    OrderedList = SortByDefault(SongList);
+                    OrderedList = SortByOrder(SongList);
                     break;
                 case SortType.Genre:
                     OrderedList = SortByGenre(SongList);
@@ -259,7 +259,7 @@ namespace AdditionalFilterOptions.Patches
                 switch (SortList.Sorts[i])
                 {
                     case SortType.Default:
-                        OrderedList = SortByDefault(OrderedList);
+                        OrderedList = SortByOrder(OrderedList);
                         break;
                     case SortType.Genre:
                         OrderedList = SortByGenre(OrderedList);
@@ -308,13 +308,13 @@ namespace AdditionalFilterOptions.Patches
             return newSongList;
         }
 
-        static IOrderedEnumerable<SongFilterData> SortByDefault(List<SongFilterData> SongList)
+        static IOrderedEnumerable<SongFilterData> SortByOrder(List<SongFilterData> SongList)
         {
             return SongList.OrderBy((x) => x.Order)
                            .ThenBy((x) => x.SongTitle);
         }
 
-        static IOrderedEnumerable<SongFilterData> SortByDefault(IOrderedEnumerable<SongFilterData> SongList)
+        static IOrderedEnumerable<SongFilterData> SortByOrder(IOrderedEnumerable<SongFilterData> SongList)
         {
             return SongList.ThenBy((x) => x.Order)
                            .ThenBy((x) => x.SongTitle);
@@ -332,18 +332,12 @@ namespace AdditionalFilterOptions.Patches
 
         static IOrderedEnumerable<SongFilterData> SortByDifficulty(List<SongFilterData> SongList)
         {
-            // This is ugly, but it might actually be accurate
-            return SongList.OrderBy((x) => x.Star)
-                           .ThenBy((x) => x.GenreNo)
-                           .ThenBy((x) => x.Order);
+            return SongList.OrderBy((x) => x.Star);
         }
 
         static IOrderedEnumerable<SongFilterData> SortByDifficulty(IOrderedEnumerable<SongFilterData> SongList)
         {
-            // This is ugly, but it might actually be accurate
-            return SongList.ThenBy((x) => x.Star)
-                           .ThenBy((x) => x.GenreNo)
-                           .ThenBy((x) => x.Order);
+            return SongList.ThenBy((x) => x.Star);
         }
 
         static IOrderedEnumerable<SongFilterData> SortByAlphabeticalTitle(List<SongFilterData> SongList)

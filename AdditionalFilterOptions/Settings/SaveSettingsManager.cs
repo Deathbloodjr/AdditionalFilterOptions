@@ -85,6 +85,8 @@ namespace AdditionalFilterOptions.Settings
                         sortSettings.Sorts.Add(sortEnum);
                     }
                 }
+
+                filterSettings.PlaylistData = new PlaylistData(json["Playlist"].AsString());
             }
         }
 
@@ -113,7 +115,7 @@ namespace AdditionalFilterOptions.Settings
                     .Add("Rainbow", filterSettings.GetCrown(DataConst.CrownType.Rainbow)))
                 .Add("MinDifficulty", filterSettings.MinDifficulty)
                 .Add("MaxDifficulty", filterSettings.MaxDifficulty)
-                .Add("Playlist", filterSettings.PlaylistData.Name)
+                .Add("Playlist", filterSettings.PlaylistData.JsonFilePath)
                 .Add("SortType", new LWJsonArray())
                 .Add("TextFilter", filterSettings.TextFilter)
                 .Add("Bonus", filterSettings.Bonus)
