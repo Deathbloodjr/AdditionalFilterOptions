@@ -772,6 +772,9 @@ namespace AdditionalFilterOptions.Patches
             {
                 return new List<SongDifficultyData>(FullSongList);
             }
+
+            
+
             List<SongDifficultyData> result = new List<SongDifficultyData>();
 
             for (int i = 0; i < songData.Songs.Count; i++)

@@ -63,5 +63,20 @@ namespace AdditionalFilterOptions.Patches
                 }
             }
         }
+
+        public void ReloadSongList()
+        {
+            LWJson node = LWJson.Parse(File.ReadAllText(JsonFilePath));
+            Songs = new List<PlaylistSongData>();
+            var songsArray = node["songs"].AsArray();
+            for (int i = 0; i < songsArray.Count; i++)
+            {
+                var song = PlaylistSongData.CreatePlaylistSongData(songsArray[i]);
+                if (song is not null)
+                {
+                    Songs.Add(song);
+                }
+            }
+        }
     }
 }
