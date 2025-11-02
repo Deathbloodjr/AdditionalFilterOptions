@@ -789,62 +789,6 @@ namespace AdditionalFilterOptions.Patches
             return result;
         }
 
-        //void UpdateSongList(List<SongSelectManager.Song> newList)
-        //{
-        //    if (FullSongList.Count <= songSelectManager.SelectedSongIndex)
-        //    {
-        //        Plugin.LogError("FullSongList.Count " + FullSongList.Count + " <= songSelectManager.SelectedSongIndex " + songSelectManager.SelectedSongIndex);
-        //    }
-        //    var prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
-
-        //    if (newList.Count == 0)
-        //    {
-        //        songSelectManager.SongList = new List<SongSelectManager.Song>(FullSongList);
-        //    }
-        //    else
-        //    {
-        //        songSelectManager.SongList = new List<SongSelectManager.Song>(newList);
-        //    }
-
-        //    int newSongIndex = 0;
-        //    for (int i = 0; i < newList.Count; i++)
-        //    {
-        //        if (newList[i].Id == prevSongId)
-        //        {
-        //            newSongIndex = i;
-        //            break;
-        //        }
-        //    }
-
-        //    var currentCueSheetName = songSelectManager.songPlayer.CueSheetName;
-        //    if (songSelectManager.SongList.Count <= newSongIndex)
-        //    {
-        //        Plugin.LogError("songSelectManager.SongList.Count <= newSongIndex");
-        //    }
-        //    if (songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex)
-        //    {
-        //        Plugin.LogError("songSelectManager.bgmCueSheets.Count <= songSelectManager.SongList[newSongIndex].PreviewIndex");
-        //    }
-        //    var currentSongSheetName = songSelectManager.bgmCueSheets[songSelectManager.SongList[newSongIndex].PreviewIndex];
-
-        //    if (currentCueSheetName != currentSongSheetName)
-        //    {
-        //        songSelectManager.playingSongIndex = -1;
-        //        songSelectManager.isSongLoadRequested = true;
-        //        songSelectManager.songPlayer.Stop(true);
-        //        songSelectManager.isSongPlaying = false;
-        //    }
-
-        //    songSelectManager.SelectedSongIndex = newSongIndex;
-        //    songSelectManager.PlayKanbanMoveAnim(SongSelectManager.KanbanMoveType.Initialize, SongSelectManager.KanbanMoveSpeed.Normal);
-        //    songSelectManager.UpdateKanbanSurface(false);
-        //    songSelectManager.UpdateSortBarSurface(true);
-
-        //    songSelectManager.oniUraChangeTimeCount = 0f;
-        //    songSelectManager.kanbans[0].DiffCourseChangeAnim.Play("ChangeMania", 0, 1f);
-        //    songSelectManager.UpdateScoreDisplay();
-        //}
-
         void UpdateSongList(List<SongDifficultyData> filteredSongList)
         {
             if (FullSongList.Count <= songSelectManager.SelectedSongIndex)
@@ -878,6 +822,8 @@ namespace AdditionalFilterOptions.Patches
                     songSelectManager.SongList.Add(song);
                 }
             }
+
+            previousIndex = Mathf.Max(previousIndex, 0);
 
             int newSongIndex = Mathf.Max(previousIndex, 0);
             for (int i = 0; i < songSelectManager.SongList.Count; i++)

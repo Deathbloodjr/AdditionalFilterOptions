@@ -205,6 +205,10 @@ namespace AdditionalFilterOptions.Patches
                     }
                 }
             }
+            else
+            {
+                result.AddRange(songs);
+            }
             return result;
         }
     }
