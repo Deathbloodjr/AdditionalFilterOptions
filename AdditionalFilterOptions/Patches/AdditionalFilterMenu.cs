@@ -164,13 +164,25 @@ namespace AdditionalFilterOptions.Patches
                 inputField.onValueChanged.AddListener((string x) => SearchInputChanged(x));
                 inputField.onDeselect.AddListener((string x) => ActivateInputField());
 
-                DirectoryInfo playlistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigPlaylistLocation.Value);
-                var playlistFiles = playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList();
+                List<FileInfo> playlistFiles = new List<FileInfo>();
+
+                // More generic playlists, like PS4 song list or whatever
+                DirectoryInfo playlistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigGenericPlaylistLocation.Value);
+                if (playlistDirInfo.Exists)
+                {
+                    playlistFiles.AddRange(playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList());
+                }
+                // More specific playlists, like specific practice songs
+                DirectoryInfo userPlaylistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigUserSpecificPlaylistLocation.Value);
+                if (userPlaylistDirInfo.Exists)
+                {
+                    playlistFiles.AddRange(userPlaylistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList());
+                }
 
                 playlistDataObjects = new List<PlaylistData>();
                 for (int i = 0; i < playlistFiles.Count; i++)
                 {
-                    var playlistDataObject = new PlaylistData(playlistFiles[i].FullName);
+                    var playlistDataObject = PlaylistData.CreatePlaylistDataFromFilePath(playlistFiles[i].FullName);
                     playlistDataObjects.Add(playlistDataObject);
                 }
 
@@ -768,12 +780,16 @@ namespace AdditionalFilterOptions.Patches
 
         List<SongDifficultyData> LoadPlaylist(PlaylistData songData)
         {
-            if (songData == null || songData.JsonFilePath == string.Empty)
+            if (songData == null)
             {
                 return new List<SongDifficultyData>(FullSongList);
             }
 
-            
+            songData.ReloadSongList();
+            if (songData.Songs.Count == 0)
+            {
+                return new List<SongDifficultyData>(FullSongList);
+            }
 
             List<SongDifficultyData> result = new List<SongDifficultyData>();
 

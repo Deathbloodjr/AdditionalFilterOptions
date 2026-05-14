@@ -1,12 +1,14 @@
-﻿using BepInEx;
+﻿using AdditionalFilterOptions.Patches;
+using BepInEx;
+using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using SaveProfileManager.Patches;
 using System;
 using System.Collections;
-using UnityEngine;
-using BepInEx.Configuration;
-using AdditionalFilterOptions.Patches;
 using System.IO;
+using System.Reflection;
+using UnityEngine;
 
 #if TAIKO_IL2CPP
 using BepInEx.Unity.IL2CPP.Utils;
@@ -15,10 +17,10 @@ using BepInEx.Unity.IL2CPP;
 
 namespace AdditionalFilterOptions
 {
-    [BepInPlugin(PluginInfo.PLUGIN_GUID, ModName, PluginInfo.PLUGIN_VERSION)]
-#if TAIKO_MONO
+    [BepInPlugin(MyPluginInfo.PLUGIN_GUID, ModName, MyPluginInfo.PLUGIN_VERSION)]
+#if MONO
     public class Plugin : BaseUnityPlugin
-#elif TAIKO_IL2CPP
+#elif IL2CPP
     public class Plugin : BasePlugin
 #endif
     {
@@ -29,55 +31,73 @@ namespace AdditionalFilterOptions
         public new static ManualLogSource Log;
 
         public ConfigEntry<bool> ConfigEnabled;
-        public ConfigEntry<string> ConfigPlaylistLocation;
+        public ConfigEntry<string> ConfigGenericPlaylistLocation;
+        public ConfigEntry<string> ConfigUserSpecificPlaylistLocation;
         public ConfigEntry<string> ConfigSettingsLocation;
 
         public ConfigEntry<bool> ConfigLoggingEnabled;
         public ConfigEntry<int> ConfigLoggingDetailLevelEnabled;
 
-#if TAIKO_MONO
+#if MONO
         private void Awake()
-#elif TAIKO_IL2CPP
+#elif IL2CPP
         public override void Load()
 #endif
         {
             Instance = this;
 
-#if TAIKO_MONO
+#if MONO
             Log = Logger;
-#elif TAIKO_IL2CPP
+#elif IL2CPP
             Log = base.Log;
 #endif
 
-            SetupConfig();
+            SetupConfig(Config, Path.Combine("BepInEx", "data", ModName));
             SetupHarmony();
+
+
+            var isSaveManagerLoaded = IsSaveManagerLoaded();
+            if (isSaveManagerLoaded)
+            {
+                AddToSaveManager();
+            }
         }
 
-        private void SetupConfig()
+        // Any data that's likely to be shared between multiple profiles should use the dataFolder path
+        // Any data that's likely to be specific per profile should use the saveFolder path
+        private void SetupConfig(ConfigFile config, string saveFolder, bool isSaveManager = false)
         {
-            string dataFolderPath = Path.Combine("BepInEx", "data", ModName);
+            string dataFolder = Path.Combine("BepInEx", "data", ModName);
 
-            ConfigEnabled = Config.Bind("General",
-                "Enabled",
-                true,
-                "Enables the mod.");
+            if (!isSaveManager)
+            {
+                ConfigEnabled = config.Bind("General",
+                   "Enabled",
+                   true,
+                   "Enables the mod.");
+            }
 
-            ConfigPlaylistLocation = Config.Bind("General",
-                "PlaylistLocation",
-                Path.Combine(dataFolderPath, "CustomPlaylists"),
-                "Location for custom playlists.");
+            ConfigGenericPlaylistLocation = config.Bind("General",
+                "GenericPlaylistLocation",
+                Path.Combine(dataFolder, "CustomPlaylists"),
+                "Location for generic custom playlists that'll be shared among multiple profiles.");
 
-            ConfigSettingsLocation = Config.Bind("General",
+            ConfigUserSpecificPlaylistLocation = config.Bind("General",
+                "UserSpecificPlaylistLocation",
+                Path.Combine(saveFolder, "CustomPlaylists"),
+                "Location for user specific custom playlists.");
+
+            ConfigSettingsLocation = config.Bind("General",
                 "SettingsLocation",
-                Path.Combine(dataFolderPath, "Settings"),
+                Path.Combine(saveFolder, "Settings"),
                 "Location for sorting and filtering settings.");
 
-            ConfigLoggingEnabled = Config.Bind("Debug",
+            ConfigLoggingEnabled = config.Bind("Debug",
                 "LoggingEnabled",
                 true,
                 "Enables logs to be sent to the console.");
 
-            ConfigLoggingDetailLevelEnabled = Config.Bind("Debug",
+            ConfigLoggingDetailLevelEnabled = config.Bind("Debug",
                 "LoggingDetailLevelEnabled",
                 0,
                 "Enables more detailed logs to be sent to the console. The higher the number, the more logs will be displayed. Mostly for my own debugging.");
@@ -86,16 +106,103 @@ namespace AdditionalFilterOptions
         private void SetupHarmony()
         {
             // Patch methods
-            _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
+            _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
 
-            if (ConfigEnabled.Value)
+            LoadPlugin(ConfigEnabled.Value);
+        }
+
+        public static void LoadPlugin(bool enabled)
+        {
+            if (enabled)
             {
-                _harmony.PatchAll(typeof(AdditionalFilterOptionsPatch));
-                Log.LogInfo($"Plugin {PluginInfo.PLUGIN_NAME} is loaded!");
+                bool result = true;
+                // If any PatchFile fails, result will become false
+                result &= Instance.PatchFile(typeof(AdditionalFilterOptionsPatch));
+                if (result)
+                {
+                    ModLogger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} is loaded!");
+                }
+                else
+                {
+                    ModLogger.Log($"Plugin {MyPluginInfo.PLUGIN_GUID} failed to load.", LogType.Error);
+                    // Unload this instance of Harmony
+                    // I hope this works the way I think it does
+                    Instance._harmony.UnpatchSelf();
+                }
             }
             else
             {
-                Log.LogInfo($"Plugin {PluginInfo.PLUGIN_NAME} is disabled.");
+                ModLogger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} is disabled.");
+            }
+        }
+
+        private bool PatchFile(Type type)
+        {
+            if (_harmony == null)
+            {
+                _harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+            }
+            try
+            {
+                _harmony.PatchAll(type);
+                ModLogger.Log("File patched: " + type.FullName, LogType.Debug);
+                return true;
+            }
+            catch (Exception e)
+            {
+                ModLogger.Log("Failed to patch file: " + type.FullName);
+                ModLogger.Log(e.Message);
+                return false;
+            }
+        }
+
+        public static void UnloadPlugin()
+        {
+            Instance._harmony.UnpatchSelf();
+            AdditionalFilterOptionsPatch.isFirstStartup = true;
+            ModLogger.Log($"Plugin {MyPluginInfo.PLUGIN_NAME} has been unpatched.");
+        }
+
+        public static void ReloadPlugin()
+        {
+            // Reloading will always be completely different per mod
+            // You'll want to reload any config file or save data that may be specific per profile
+            // If there's nothing to reload, don't put anything here, and keep it commented in AddToSaveManager
+            //SwapSongLanguagesPatch.InitializeOverrideLanguages();
+            //TaikoSingletonMonoBehaviour<CommonObjects>.Instance.MyDataManager.MusicData.Reload();
+
+            // This will tell the mod to reload the default settings for the newly selected profile
+            AdditionalFilterOptionsPatch.isFirstStartup = true;
+        }
+
+        public void AddToSaveManager()
+        {
+            // Add SaveDataManager dll path to your csproj.user file
+            // https://github.com/Deathbloodjr/TDMX.SaveProfileManager
+            var plugin = new PluginSaveDataInterface(MyPluginInfo.PLUGIN_GUID);
+            plugin.AssignLoadFunction(LoadPlugin);
+            plugin.AssignUnloadFunction(UnloadPlugin);
+
+            // Reloading will always be completely different per mod
+            // You'll want to reload any config file or save data that may be specific per profile
+            // If there's nothing to reload, don't put anything here, and keep it commented in AddToSaveManager
+            //plugin.AssignReloadSaveFunction(ReloadPlugin);
+
+            // Uncomment this if there are more config options than just ConfigEnabled
+            //plugin.AssignConfigSetupFunction(SetupConfig);
+            plugin.AddToManager(ConfigEnabled.Value);
+        }
+
+        private bool IsSaveManagerLoaded()
+        {
+            try
+            {
+                Assembly loadedAssembly = Assembly.Load("com.DB.TDMX.SaveProfileManager");
+                return loadedAssembly != null;
+            }
+            catch
+            {
+                return false;
             }
         }
 

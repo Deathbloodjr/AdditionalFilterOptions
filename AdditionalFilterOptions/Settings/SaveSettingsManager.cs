@@ -45,48 +45,59 @@ namespace AdditionalFilterOptions.Settings
         {
             filterSettings = new FilterSettings();
             sortSettings = new SortSettings();
-            FileInfo file = new FileInfo(filePath);
-            if (file.Exists)
+            try
             {
-                var json = LWJson.Parse(File.ReadAllText(file.FullName));
-                filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Easy, json["Difficulties"]["Easy"].AsBoolean());
-                filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Normal, json["Difficulties"]["Normal"].AsBoolean());
-                filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Hard, json["Difficulties"]["Hard"].AsBoolean());
-                filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Mania, json["Difficulties"]["Oni"].AsBoolean());
-                filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Ura, json["Difficulties"]["Ura"].AsBoolean());
 
-                filterSettings.SetGenre(EnsoData.SongGenre.Pops, json["Genres"]["Pops"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Anime, json["Genres"]["Anime"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Vocalo, json["Genres"]["Vocaloid"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Variety, json["Genres"]["Variety"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Classic, json["Genres"]["Classical"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Game, json["Genres"]["GameMusic"].AsBoolean());
-                filterSettings.SetGenre(EnsoData.SongGenre.Namco, json["Genres"]["NamcoOriginal"].AsBoolean());
-
-                filterSettings.SetCrown(DataConst.CrownType.None, json["Crowns"]["None"].AsBoolean());
-                filterSettings.SetCrown(DataConst.CrownType.Silver, json["Crowns"]["Silver"].AsBoolean());
-                filterSettings.SetCrown(DataConst.CrownType.Gold, json["Crowns"]["Gold"].AsBoolean());
-                filterSettings.SetCrown(DataConst.CrownType.Rainbow, json["Crowns"]["Rainbow"].AsBoolean());
-
-                filterSettings.MinDifficulty = json["MinDifficulty"].AsInteger();
-                filterSettings.MaxDifficulty = json["MaxDifficulty"].AsInteger();
-
-                filterSettings.TextFilter = json["TextFilter"].AsString();
-
-                filterSettings.Bonus = json["Bonus"].AsBoolean();
-                filterSettings.Favorite = json["Favorite"].AsBoolean();
-
-                sortSettings.Sorts.Clear();
-                var sorts = json["SortType"].AsArray();
-                for (int i = 0; i < sorts.Count; i++)
+                FileInfo file = new FileInfo(filePath);
+                if (file.Exists)
                 {
-                    if (Enum.TryParse(sorts[i].AsString(), out SortType sortEnum))
+                    var json = LWJson.Parse(File.ReadAllText(file.FullName));
+                    filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Easy, json["Difficulties"]["Easy"].AsBoolean());
+                    filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Normal, json["Difficulties"]["Normal"].AsBoolean());
+                    filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Hard, json["Difficulties"]["Hard"].AsBoolean());
+                    filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Mania, json["Difficulties"]["Oni"].AsBoolean());
+                    filterSettings.SetDifficulty(EnsoData.EnsoLevelType.Ura, json["Difficulties"]["Ura"].AsBoolean());
+
+                    filterSettings.SetGenre(EnsoData.SongGenre.Pops, json["Genres"]["Pops"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Anime, json["Genres"]["Anime"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Vocalo, json["Genres"]["Vocaloid"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Variety, json["Genres"]["Variety"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Classic, json["Genres"]["Classical"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Game, json["Genres"]["GameMusic"].AsBoolean());
+                    filterSettings.SetGenre(EnsoData.SongGenre.Namco, json["Genres"]["NamcoOriginal"].AsBoolean());
+
+                    filterSettings.SetCrown(DataConst.CrownType.None, json["Crowns"]["None"].AsBoolean());
+                    filterSettings.SetCrown(DataConst.CrownType.Silver, json["Crowns"]["Silver"].AsBoolean());
+                    filterSettings.SetCrown(DataConst.CrownType.Gold, json["Crowns"]["Gold"].AsBoolean());
+                    filterSettings.SetCrown(DataConst.CrownType.Rainbow, json["Crowns"]["Rainbow"].AsBoolean());
+
+                    filterSettings.MinDifficulty = json["MinDifficulty"].AsInteger();
+                    filterSettings.MaxDifficulty = json["MaxDifficulty"].AsInteger();
+
+                    filterSettings.TextFilter = json["TextFilter"].AsString();
+
+                    filterSettings.Bonus = json["Bonus"].AsBoolean();
+                    filterSettings.Favorite = json["Favorite"].AsBoolean();
+
+                    sortSettings.Sorts.Clear();
+                    var sorts = json["SortType"].AsArray();
+                    for (int i = 0; i < sorts.Count; i++)
                     {
-                        sortSettings.Sorts.Add(sortEnum);
+                        if (Enum.TryParse(sorts[i].AsString(), out SortType sortEnum))
+                        {
+                            sortSettings.Sorts.Add(sortEnum);
+                        }
                     }
+
+                    // Don't save current playlist in settings right now
+                    // This entire mod needs a rewrite, we can deal with it later
+                    //filterSettings.PlaylistData = new PlaylistData(json["Playlist"].AsString());
                 }
 
-                filterSettings.PlaylistData = new PlaylistData(json["Playlist"].AsString());
+            }
+            catch (Exception)
+            {
+                // This is extremely lazy, but it's how I'm going to do it for now
             }
         }
 

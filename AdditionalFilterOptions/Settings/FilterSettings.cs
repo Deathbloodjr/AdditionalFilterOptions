@@ -26,7 +26,7 @@ namespace AdditionalFilterOptions.Settings
 
         public void ResetValues()
         {
-            PlaylistData = new PlaylistData("");
+            PlaylistData = PlaylistData.CreatePlaylistDataFromFilePath("");
             for (int i = 0; i < (int)EnsoData.EnsoLevelType.Num; i++)
             {
                 var diff = (EnsoData.EnsoLevelType)i;
