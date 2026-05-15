@@ -820,7 +820,15 @@ namespace AdditionalFilterOptions.Patches
             //}
 
             // TODO: Make sure when a song is removed from the previous play, that the song list goes to that position after the song is removed
-            var prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
+            if (songSelectManager.SelectedSongIndex > songSelectManager.SongList.Count)
+            {
+                songSelectManager.SelectedSongIndex = 0;
+            }
+            string prevSongId = "";
+            if (songSelectManager.SongList.Count != 0)
+            {
+                prevSongId = songSelectManager.SongList[songSelectManager.SelectedSongIndex].Id;
+            }
             //Plugin.LogInfo("prevSongId: " + prevSongId);
             //Plugin.LogInfo("songSelectManager.SelectedSongIndex: " + songSelectManager.SelectedSongIndex);
 

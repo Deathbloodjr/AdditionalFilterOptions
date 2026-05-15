@@ -49,7 +49,7 @@ namespace AdditionalFilterOptions.Patches
         {
             if (filterMenu != null)
             {
-                filterMenu.InitializeFullSongList(new List<SongSelectManager.Song>(__instance.SongList));
+                filterMenu.InitializeFullSongList(new List<SongSelectManager.Song>(__instance.UnsortedSongList));
             }
         }
 
