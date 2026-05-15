@@ -186,10 +186,10 @@ namespace AdditionalFilterOptions
             // Reloading will always be completely different per mod
             // You'll want to reload any config file or save data that may be specific per profile
             // If there's nothing to reload, don't put anything here, and keep it commented in AddToSaveManager
-            //plugin.AssignReloadSaveFunction(ReloadPlugin);
+            plugin.AssignReloadSaveFunction(ReloadPlugin);
 
-            // Uncomment this if there are more config options than just ConfigEnabled
-            //plugin.AssignConfigSetupFunction(SetupConfig);
+            // Comment this if the only config option is ConfigEnabled
+            plugin.AssignConfigSetupFunction(SetupConfig);
             plugin.AddToManager(ConfigEnabled.Value);
         }
 
