@@ -164,25 +164,31 @@ namespace AdditionalFilterOptions.Patches
                 inputField.onValueChanged.AddListener((string x) => SearchInputChanged(x));
                 inputField.onDeselect.AddListener((string x) => ActivateInputField());
 
-                List<FileInfo> playlistFiles = new List<FileInfo>();
+                HashSet<string> playlistFilePaths = new HashSet<string>();
 
                 // More generic playlists, like PS4 song list or whatever
                 DirectoryInfo playlistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigGenericPlaylistLocation.Value);
                 if (playlistDirInfo.Exists)
                 {
-                    playlistFiles.AddRange(playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList());
+                    foreach (FileInfo file in playlistDirInfo.GetFiles("*.json", SearchOption.AllDirectories))
+                    {
+                        playlistFilePaths.Add(file.FullName);
+                    }
                 }
                 // More specific playlists, like specific practice songs
                 DirectoryInfo userPlaylistDirInfo = new DirectoryInfo(Plugin.Instance.ConfigUserSpecificPlaylistLocation.Value);
                 if (userPlaylistDirInfo.Exists)
                 {
-                    playlistFiles.AddRange(userPlaylistDirInfo.GetFiles("*.json", SearchOption.AllDirectories).ToList());
+                    foreach (FileInfo file in userPlaylistDirInfo.GetFiles("*.json", SearchOption.AllDirectories))
+                    {
+                        playlistFilePaths.Add(file.FullName);
+                    }
                 }
 
                 playlistDataObjects = new List<PlaylistData>();
-                for (int i = 0; i < playlistFiles.Count; i++)
+                foreach (string file in playlistFilePaths)
                 {
-                    var playlistDataObject = PlaylistData.CreatePlaylistDataFromFilePath(playlistFiles[i].FullName);
+                    var playlistDataObject = PlaylistData.CreatePlaylistDataFromFilePath(file);
                     playlistDataObjects.Add(playlistDataObject);
                 }
 
