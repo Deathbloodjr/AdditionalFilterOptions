@@ -10,7 +10,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 
-#if TAIKO_IL2CPP
+#if IL2CPP
 using BepInEx.Unity.IL2CPP.Utils;
 using BepInEx.Unity.IL2CPP;
 #endif
