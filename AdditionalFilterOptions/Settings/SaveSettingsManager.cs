@@ -91,7 +91,7 @@ namespace AdditionalFilterOptions.Settings
 
                     // Don't save current playlist in settings right now
                     // This entire mod needs a rewrite, we can deal with it later
-                    //filterSettings.PlaylistData = new PlaylistData(json["Playlist"].AsString());
+                    filterSettings.PlaylistData = PlaylistData.CreatePlaylistDataFromFilePath(json["Playlist"].AsString());
                 }
 
             }
